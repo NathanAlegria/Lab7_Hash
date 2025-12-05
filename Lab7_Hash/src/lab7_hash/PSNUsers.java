@@ -70,27 +70,28 @@ public class PSNUsers {
     }
 
     public void addTrophieTo(String username, String game, String trophyName, Trophy type, byte[] img) throws Exception {
-        if (users == null) {
-            return;
-        }
+        long pos = users.search(username);
         
-        long pos = -1;
-        usersFile.seek(0);
-        while (usersFile.getFilePointer() < usersFile.length()) {
-            long currentPos = usersFile.getFilePointer();
-            String u = usersFile.readUTF();
-            if (u.equals(username)) {
-                pos = currentPos;
-                break;
-            }
-            usersFile.readInt();
-            usersFile.readInt();
-            usersFile.readBoolean();
-        }
         if (pos == -1) {
             return;
         }
-
+        
+        usersFile.seek(pos);
+        usersFile.readUTF();
+        
+        long pointsPos = usersFile.getFilePointer();
+        int currentPoints = usersFile.readInt();
+        int currentTrophies = usersFile.readInt();
+        boolean active = usersFile.readBoolean();
+        
+        if (!active) {
+            return;
+        }
+        
+        if (ExisteTrofeo(username, game, trophyName, type)) {
+            return;
+        }
+        
         trophiesFile.seek(trophiesFile.length());
         trophiesFile.writeUTF(username);
         trophiesFile.writeUTF(type.name());
@@ -100,17 +101,31 @@ public class PSNUsers {
         trophiesFile.writeUTF(fecha);
         trophiesFile.writeInt(img.length);
         trophiesFile.write(img);
-
-        usersFile.seek(pos);
-        usersFile.readUTF();
-        long pointsPos = usersFile.getFilePointer();
-        int currentPoints = usersFile.readInt();
-        int currentTrophies = usersFile.readInt();
-        boolean active = usersFile.readBoolean();
-
+        
         usersFile.seek(pointsPos);
         usersFile.writeInt(currentPoints + type.points);
         usersFile.writeInt(currentTrophies + 1);
+        
+//        while (usersFile.getFilePointer() < usersFile.length()) {
+//            long currentPos = usersFile.getFilePointer();
+//            String u = usersFile.readUTF();
+//            if (u.equals(username)) {
+//                pos = currentPos;
+//                break;
+//            }
+//            usersFile.readInt();
+//            usersFile.readInt();
+//            usersFile.readBoolean();
+//        }
+//        if (pos == -1) {
+//            return;
+//        }
+//
+
+//
+//        usersFile.seek(pos);
+//        usersFile.readUTF();
+
     }
 
     public String playerInfo(String username) throws Exception {
@@ -166,4 +181,41 @@ public class PSNUsers {
         return users.search(username) != -1;
     }
 
+    private static String normalize(String s) {
+        if (s == null) {
+            return "";
+        }
+        
+        s = s.trim().toLowerCase().replaceAll("\\s+", " ");
+        s = s.replace("á", "a").replace("é", "e").replace("í", "i").replace("ó", "o").replace("ú", "u");
+        
+        return s;
+    }
+    
+    private boolean ExisteTrofeo(String username, String game,String nombretrofeo, Trophy tipo) throws IOException {
+        String objetivo = normalize(tipo.name()) + "|" + normalize(game) + "|" + normalize(nombretrofeo);
+        trophiesFile.seek(0);
+        
+        while(trophiesFile.getFilePointer() < trophiesFile.length()) {
+            String u = trophiesFile.readUTF();
+            String t = normalize(trophiesFile.readUTF());
+            String g = normalize(trophiesFile.readUTF());
+            String d = normalize(trophiesFile.readUTF());
+            trophiesFile.readUTF();
+            
+            int imglen = trophiesFile.readInt();
+            
+            trophiesFile.skipBytes(imglen);
+            
+            if (u.equals(username)) {
+                String llave = t + "|" + g + "|" + d;
+                
+                if (llave.equals(objetivo)) {
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+    }
 }
