@@ -9,5 +9,13 @@ package lab7_hash;
  * @author Nathan
  */
 public class Entry {
-    
+    public String username;
+    public long pos;
+    public Entry sigte;
+
+    public Entry(String username, long pos) {
+        this.username = username;
+        this.pos = pos;
+        this.sigte = null;
+    } 
 }
