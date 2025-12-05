@@ -56,4 +56,50 @@ public class PSNUsers {
         } catch (EOFException e) {
         }
     }
+    
+    /*
+        Formato:
+        username
+        anumuldor de puntos por trofeos
+        contador de trofeos
+
+    */
+    public void addUser(String username) throws IOException {
+        long pos = users.search(username);
+        
+        if (pos != 0) {
+            return;
+        }
+        
+        usersFile.seek(usersFile.length());
+        long posescribir = usersFile.getFilePointer();
+        
+        usersFile.writeUTF(username);
+        usersFile.writeInt(0);
+        usersFile.writeInt(0);
+        usersFile.writeBoolean(true);
+        
+        users.add(username, posescribir);
+    }
+    
+    public void deactivateUser(String username) throws IOException {
+        long pos = users.search(username);
+        
+        if (pos == -1) {
+            return;
+        }
+        
+        //Leer las cosas para poder marcar el usuario como no activo
+        usersFile.seek(pos);
+        
+        usersFile.readUTF();
+        usersFile.readInt();
+        usersFile.readInt();
+        
+        long posactivo = usersFile.getFilePointer();
+        
+        usersFile.writeBoolean(false);
+        
+        users.remove(username);
+    }
 }
