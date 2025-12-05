@@ -177,57 +177,69 @@ public class MainGUI extends JFrame {
         }
         JOptionPane.showMessageDialog(null, panel, "Resultado", JOptionPane.PLAIN_MESSAGE);
     }
-
+    
     private void mostrarInfo(String username) throws Exception {
-
         String texto = system.playerInfo(username);
-
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        panel.add(new JSeparator(SwingConstants.HORIZONTAL));
-        panel.add(Box.createVerticalStrut(5));
-
         String[] lineas = texto.split("\n");
-        for (String linea : lineas) {
-            JLabel lbl = new JLabel(linea);
+        for (int i = 0; i < lineas.length; i++) {
+            if (lineas[i].startsWith("Activo:")) {
+                lineas[i] = "Estado:" + lineas[i].substring(6);
+            }
+            JLabel lbl = new JLabel(lineas[i]);
             lbl.setAlignmentX(Component.LEFT_ALIGNMENT);
             panel.add(lbl);
         }
 
-        panel.add(Box.createVerticalStrut(10));
 
+        RandomAccessFile trophiesFile = new RandomAccessFile("trophies.psn", "r");
+        trophiesFile.seek(0);
+        int trophyCount = 0;
+        while (trophiesFile.getFilePointer() < trophiesFile.length()) {
+            String u = trophiesFile.readUTF();
+            trophiesFile.readUTF(); 
+            trophiesFile.readUTF(); 
+            trophiesFile.readUTF(); 
+            trophiesFile.readUTF(); 
+            int imglen = trophiesFile.readInt();
+            trophiesFile.skipBytes(imglen);
+            if (u.equals(username)) {
+                trophyCount++;
+            }
+        }
+
+        JLabel cantidadTrofeos = new JLabel("Cantidad de trofeos: " + trophyCount);
+        cantidadTrofeos.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(Box.createVerticalStrut(5));
+        panel.add(cantidadTrofeos);
+
+        panel.add(Box.createVerticalStrut(10));
         JLabel separador = new JLabel("TROFEOS:");
         separador.setAlignmentX(Component.LEFT_ALIGNMENT);
         separador.setFont(new Font("Arial", Font.BOLD, 13));
         panel.add(separador);
-
         panel.add(new JSeparator(SwingConstants.HORIZONTAL));
         panel.add(Box.createVerticalStrut(5));
 
-        RandomAccessFile trophiesFile = new RandomAccessFile("trophies.psn", "r");
         trophiesFile.seek(0);
-
         while (trophiesFile.getFilePointer() < trophiesFile.length()) {
-
             String u = trophiesFile.readUTF();
             String tipo = trophiesFile.readUTF();
             String game = trophiesFile.readUTF();
             String desc = trophiesFile.readUTF();
             String fecha = trophiesFile.readUTF();
-
             int imglen = trophiesFile.readInt();
             byte[] img = new byte[imglen];
             trophiesFile.read(img);
 
             if (u.equals(username)) {
-
-                JLabel title = new JLabel(
-                        fecha + "  -  " + tipo + "  -  " + game + "  -  " + desc
-                );
-                title.setAlignmentX(Component.LEFT_ALIGNMENT);
-                panel.add(title);
+                JLabel infoTrofeo = new JLabel(fecha + " - " + tipo + " - " + game + " - " + desc);
+                infoTrofeo.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panel.add(Box.createVerticalStrut(5));
+                panel.add(infoTrofeo);
 
                 ImageIcon icon = new ImageIcon(img);
                 Image scaled = icon.getImage().getScaledInstance(150, 150, Image.SCALE_SMOOTH);
@@ -239,17 +251,12 @@ public class MainGUI extends JFrame {
                 panel.add(new JSeparator(SwingConstants.HORIZONTAL));
                 panel.add(Box.createVerticalStrut(10));
             }
-
         }
- 
         trophiesFile.close();
 
         JScrollPane scroll = new JScrollPane(panel);
         scroll.setPreferredSize(new Dimension(450, 430));
-
-        JOptionPane.showMessageDialog(
-                null, scroll, "Información del jugador", JOptionPane.PLAIN_MESSAGE
-        );
+        JOptionPane.showMessageDialog(null, scroll, "Información del jugador", JOptionPane.PLAIN_MESSAGE);
     }
 
     public static void main(String[] args) throws Exception {
