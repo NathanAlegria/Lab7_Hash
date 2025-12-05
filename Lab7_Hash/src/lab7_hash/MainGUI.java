@@ -105,12 +105,17 @@ public class MainGUI extends JFrame {
                 }
                 
                 int estado = system.precheckUser(user);
+                if (estado == -2) {
+                    mostrarMensaje("Error leyendo users.psn. Intenta de nuevo.", false);
+                    return;
+                }
                 if (estado == -1) {
                     JOptionPane.showMessageDialog(this, "El usuario no existe");
                     return;
                 }
                 if (estado == 0) {
                     JOptionPane.showMessageDialog(this, "La cuenta esta inactiva. no se pueden añadir trofeos");
+                    return;
                 }
                 
                 String game = JOptionPane.showInputDialog("Juego:");

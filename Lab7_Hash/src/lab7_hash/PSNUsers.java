@@ -220,18 +220,69 @@ public class PSNUsers {
     }
     
     public int precheckUser(String username) throws IOException {
-        long pos = users.search(username);
-        
-        if (pos == -1) {
+        if (username == null) {
             return -1;
         }
         
-        usersFile.readUTF();
-        usersFile.readInt();
-        usersFile.readInt();
+        username = username.trim();
+        long pos = users.search(username);
         
-        boolean active = usersFile.readBoolean();
+        try {
+            if (pos == -1) {
+                long fix = findUserLinear(username);
+                if (fix == -1) return -1;
+                users.add(username, fix);
+                pos = fix;
+            }
+
+            if (pos < 0 || pos >= usersFile.length()) {
+                long fix = findUserLinear(username);
+                if (fix == -1) return -1;
+                users.add(username, fix);
+                pos = fix;
+            }
+
+            usersFile.seek(pos);
+            String u = usersFile.readUTF();
+            int points = usersFile.readInt();
+            int trophies = usersFile.readInt();
+            boolean active = usersFile.readBoolean();
+
+            if (!u.equals(username)) {
+                long fix = findUserLinear(username);
+                if (fix == -1) return -1;
+                users.add(username, fix);
+                usersFile.seek(fix);
+                usersFile.readUTF();
+                usersFile.readInt();
+                usersFile.readInt();
+                active = usersFile.readBoolean();
+            }
+            return active ? 1 : 0;
+
+        } catch (IOException ex) {
+            ex.printStackTrace();
+            return -2;
+        }
+    }
+    
+    private long findUserLinear(String username) throws IOException {
+        usersFile.seek(0);
         
-        return active ? 1 : 0;
+        while (usersFile.getFilePointer() < usersFile.length()) {
+            long inicio = usersFile.getFilePointer();
+            String u = usersFile.readUTF();
+            
+            usersFile.readInt();
+            usersFile.readInt();
+            
+            boolean active = usersFile.readBoolean();
+            
+            if (u.equals(username)) {
+                return inicio;
+            }
+        }
+        
+        return -1;
     }
 }
