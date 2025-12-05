@@ -70,6 +70,10 @@ public class PSNUsers {
     }
 
     public void addTrophieTo(String username, String game, String trophyName, Trophy type, byte[] img) throws Exception {
+        if (users == null) {
+            return;
+        }
+        
         long pos = -1;
         usersFile.seek(0);
         while (usersFile.getFilePointer() < usersFile.length()) {
@@ -136,8 +140,8 @@ public class PSNUsers {
         StringBuilder sb = new StringBuilder();
         sb.append("Usuario: ").append(usuario).append("\n");
         sb.append("Puntos: ").append(points).append("\n");
-        sb.append("Trofeos: ").append(trophiesCount).append("\n");
-        sb.append("Activo: ").append(active).append("\n\n");
+//        sb.append("Trofeos: ").append(trophiesCount).append("\n");
+        sb.append("Activo: ").append(active ? "ACTIVA" : "INACTIVA").append("\n\n");
 
         trophiesFile.seek(0);
         sb.append("TROFEOS:\n");
