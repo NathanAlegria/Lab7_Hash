@@ -14,7 +14,6 @@ import static javax.swing.WindowConstants.EXIT_ON_CLOSE;
  *
  * @author Nathan
  */
-
 public class MainGUI extends JFrame {
 
     private PSNUsers system;
@@ -25,6 +24,7 @@ public class MainGUI extends JFrame {
         setTitle("PSN Manager");
         setSize(400, 300);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
 
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
@@ -51,32 +51,49 @@ public class MainGUI extends JFrame {
 
         panel.add(addUser);
         panel.add(Box.createVerticalStrut(15));
-
         panel.add(delUser);
         panel.add(Box.createVerticalStrut(15));
-
         panel.add(addTrophy);
         panel.add(Box.createVerticalStrut(15));
-
         panel.add(playerInfo);
         panel.add(Box.createVerticalStrut(15));
-
         panel.add(salir);
 
         add(panel);
 
         addUser.addActionListener(e -> {
             String user = JOptionPane.showInputDialog("Ingrese username:");
+            if (user == null || user.isEmpty()) {
+                return;
+            }
             try {
-                system.addUser(user);
-            } catch (Exception ex) {}
+                if (system.userExists(user)) {
+                    mostrarMensaje("El usuario ya existe.", false);
+                } else {
+                    system.addUser(user);
+                    mostrarMensaje("Usuario agregado con éxito.", true);
+                }
+            } catch (Exception ex) {
+                mostrarMensaje("Error al agregar usuario.", false);
+            }
         });
 
         delUser.addActionListener(e -> {
             String user = JOptionPane.showInputDialog("Usuario a desactivar:");
+            if (user == null || user.isEmpty()) {
+                return;
+            }
             try {
-                system.deactivateUser(user);
-            } catch (Exception ex) {}
+                if (!system.userExists(user)) {
+                    mostrarMensaje("Usuario no encontrado.", false);
+                } else {
+                    system.deactivateUser(user);
+                    mostrarMensaje("Usuario desactivado con éxito.", true);
+                }
+            } catch (Exception ex) {
+                mostrarMensaje("Error al desactivar usuario.", false);
+            }
+
         });
 
         addTrophy.addActionListener(e -> {
@@ -84,21 +101,26 @@ public class MainGUI extends JFrame {
                 String user = JOptionPane.showInputDialog("Usuario:");
                 String game = JOptionPane.showInputDialog("Juego:");
                 String desc = JOptionPane.showInputDialog("Descripción del trofeo:");
+                if (user == null || game == null || desc == null) {
+                    return;
+                }
 
                 String[] opciones = {"PLATINO", "ORO", "PLATA", "BRONCE"};
                 String tipo = (String) JOptionPane.showInputDialog(
                         null, "Seleccione el tipo de trofeo:",
                         "Tipo", JOptionPane.QUESTION_MESSAGE, null, opciones, opciones[0]
                 );
+                if (tipo == null) {
+                    return;
+                }
 
                 JOptionPane.showMessageDialog(null,
                         "Seleccione una imagen para el trofeo (PNG/JPG)");
 
                 JFileChooser fc = new JFileChooser();
                 int result = fc.showOpenDialog(null);
-
                 if (result != JFileChooser.APPROVE_OPTION) {
-                    JOptionPane.showMessageDialog(null, "No seleccionó imagen.");
+                    mostrarMensaje("No se seleccionó imagen.", false);
                     return;
                 }
 
@@ -109,93 +131,114 @@ public class MainGUI extends JFrame {
                 fis.close();
 
                 system.addTrophieTo(user, game, desc, Trophy.valueOf(tipo), img);
+                mostrarMensaje("Trofeo agregado con éxito.", true);
 
-                JOptionPane.showMessageDialog(null, "Trofeo agregado con éxito.");
-
-            } catch (Exception ex) {}
+            } catch (Exception ex) {
+                mostrarMensaje("Error al agregar trofeo.", false);
+            }
         });
 
         playerInfo.addActionListener(e -> {
             String user = JOptionPane.showInputDialog("Usuario:");
+            if (user == null || user.isEmpty()) {
+                return;
+            }
             try {
-                mostrarInfoConImagen(user);
-            } catch (Exception ex) {}
+                mostrarInfo(user);
+            } catch (Exception ex) {
+                mostrarMensaje("Error al mostrar información.", false);
+            }
         });
 
         salir.addActionListener(e -> dispose());
     }
 
-    private void mostrarInfoConImagen(String username) throws Exception {
-
-    String texto = system.playerInfo(username);
-
-    JPanel panel = new JPanel();
-    panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-    panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-
-    String[] lineas = texto.split("\n");
-    for (String linea : lineas) {
-        JLabel lbl = new JLabel(linea);
-        lbl.setAlignmentX(Component.LEFT_ALIGNMENT);
-        panel.add(lbl);
-    }
-
-    panel.add(Box.createVerticalStrut(10));
-
-    // Texto "TROFEOS:"
-    JLabel separador = new JLabel("TROFEOS:");
-    separador.setAlignmentX(Component.LEFT_ALIGNMENT);
-    separador.setFont(new Font("Arial", Font.BOLD, 13));
-    panel.add(separador);
-
-    panel.add(Box.createVerticalStrut(5));
-
-    RandomAccessFile trophiesFile = new RandomAccessFile("trophies.psn", "r");
-    trophiesFile.seek(0);
-
-    while (trophiesFile.getFilePointer() < trophiesFile.length()) {
-
-        String u = trophiesFile.readUTF();
-        String tipo = trophiesFile.readUTF();
-        String game = trophiesFile.readUTF();
-        String desc = trophiesFile.readUTF();
-        String fecha = trophiesFile.readUTF();
-
-        int imglen = trophiesFile.readInt();
-        byte[] img = new byte[imglen];
-        trophiesFile.read(img);
-
-        if (u.equals(username)) {
-
-            JLabel title = new JLabel(
-                fecha + "  -  " + tipo + "  -  " + game + "  -  " + desc
-            );
-            title.setAlignmentX(Component.LEFT_ALIGNMENT);
-            panel.add(title);
-
-            ImageIcon icon = new ImageIcon(img);
-            Image scaled = icon.getImage().getScaledInstance(150, 150, Image.SCALE_SMOOTH);
-            JLabel imgLabel = new JLabel(new ImageIcon(scaled));
-            imgLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-            panel.add(imgLabel);
-
-            panel.add(Box.createVerticalStrut(10));
+    private void mostrarMensaje(String mensaje, boolean exito) {
+        JPanel panel = new JPanel();
+        panel.add(new JLabel(mensaje));
+        if (exito) {
+            panel.setBackground(new Color(198, 239, 206));
+        } else {
+            panel.setBackground(new Color(255, 199, 206));
         }
+        JOptionPane.showMessageDialog(null, panel, "Resultado", JOptionPane.PLAIN_MESSAGE);
     }
 
-    trophiesFile.close();
+    private void mostrarInfo(String username) throws Exception {
 
-    JScrollPane scroll = new JScrollPane(panel);
-    scroll.setPreferredSize(new Dimension(450, 430));
+        String texto = system.playerInfo(username);
 
-    JOptionPane.showMessageDialog(
-            null, scroll, "Información del jugador", JOptionPane.PLAIN_MESSAGE
-    );
-}
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
+        panel.add(new JSeparator(SwingConstants.HORIZONTAL));
+        panel.add(Box.createVerticalStrut(5));
+
+        String[] lineas = texto.split("\n");
+        for (String linea : lineas) {
+            JLabel lbl = new JLabel(linea);
+            lbl.setAlignmentX(Component.LEFT_ALIGNMENT);
+            panel.add(lbl);
+        }
+
+        panel.add(Box.createVerticalStrut(10));
+
+        JLabel separador = new JLabel("TROFEOS:");
+        separador.setAlignmentX(Component.LEFT_ALIGNMENT);
+        separador.setFont(new Font("Arial", Font.BOLD, 13));
+        panel.add(separador);
+
+        panel.add(new JSeparator(SwingConstants.HORIZONTAL));
+        panel.add(Box.createVerticalStrut(5));
+
+        RandomAccessFile trophiesFile = new RandomAccessFile("trophies.psn", "r");
+        trophiesFile.seek(0);
+
+        while (trophiesFile.getFilePointer() < trophiesFile.length()) {
+
+            String u = trophiesFile.readUTF();
+            String tipo = trophiesFile.readUTF();
+            String game = trophiesFile.readUTF();
+            String desc = trophiesFile.readUTF();
+            String fecha = trophiesFile.readUTF();
+
+            int imglen = trophiesFile.readInt();
+            byte[] img = new byte[imglen];
+            trophiesFile.read(img);
+
+            if (u.equals(username)) {
+
+                JLabel title = new JLabel(
+                        fecha + "  -  " + tipo + "  -  " + game + "  -  " + desc
+                );
+                title.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panel.add(title);
+
+                ImageIcon icon = new ImageIcon(img);
+                Image scaled = icon.getImage().getScaledInstance(150, 150, Image.SCALE_SMOOTH);
+                JLabel imgLabel = new JLabel(new ImageIcon(scaled));
+                imgLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+                panel.add(imgLabel);
+
+                panel.add(Box.createVerticalStrut(5));
+                panel.add(new JSeparator(SwingConstants.HORIZONTAL));
+                panel.add(Box.createVerticalStrut(10));
+            }
+
+        }
+ 
+        trophiesFile.close();
+
+        JScrollPane scroll = new JScrollPane(panel);
+        scroll.setPreferredSize(new Dimension(450, 430));
+
+        JOptionPane.showMessageDialog(
+                null, scroll, "Información del jugador", JOptionPane.PLAIN_MESSAGE
+        );
+    }
 
     public static void main(String[] args) throws Exception {
         new MainGUI().setVisible(true);
     }
 }
-

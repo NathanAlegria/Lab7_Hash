@@ -7,6 +7,7 @@ package lab7_hash;
 import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+
 /**
  *
  * @author andre
@@ -156,4 +157,9 @@ public class PSNUsers {
         }
         return sb.toString();
     }
+
+    public boolean userExists(String username) throws IOException {
+        return users.search(username) != -1;
+    }
+
 }
