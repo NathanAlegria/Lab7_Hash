@@ -8,94 +8,51 @@ package lab7_hash;
  *
  * @author Hp
  */
+
 public class HashTable {
-    
-    private Entry cabeza;
-    private Entry cola;
-    private int size;
-    
-    /*
-        Agrega un nuvo elemento al final de la lista
-    */
+    private Entry head;
+
+    public HashTable() {
+        head = null;
+    }
+
     public void add(String username, long pos) {
-        Entry temp = new Entry(username, pos);
-        
-        if (cabeza == null) {
-            cabeza = cola = temp;
+        Entry nuevo = new Entry(username, pos);
+        if (head == null) {
+            head = nuevo;
         } else {
-            cola.sigte = temp;
-            cola = temp;
+            Entry temp = head;
+            while (temp.sigte != null) temp = temp.sigte;
+            temp.sigte = nuevo;
         }
-        
-        size++;
     }
-    
-    /*
-        Elimina el primer elemento el cual coincida con el username
-    */
-    public boolean remove(String username) {
-        if (cabeza == null) {
-            return false;
+
+    public void remove(String username) {
+        if (head == null) return;
+
+        if (head.username.equals(username)) {
+            head = head.sigte;
+            return;
         }
-        
-        //Si el primero es el que se busca
-        if (cabeza.getUsername().equals(username)) {
-            cabeza = cabeza.sigte;
-            
-            if (cabeza == null) {
-                cola = null; //Lista quedo vacia
+
+        Entry temp = head;
+        while (temp.sigte != null) {
+            if (temp.sigte.username.equals(username)) {
+                temp.sigte = temp.sigte.sigte;
+                return;
             }
-            
-            size--;
-            
-            return true;
-        }
-        
-        //Busca en el resto
-        Entry previo = cabeza;
-        Entry actual = cabeza.sigte;
-        
-        while (actual != null) {
-            if (actual.getUsername().equals(username)) {
-                previo.sigte = actual.sigte;
-                
-                if (actual == cola) {
-                    cola = previo;
-                }
-                
-                size--;
-                return true;
-            }
-            
-            previo = actual;
-            actual = actual.sigte;
-        }
-        
-        return false;
-    }
-    
-    /*
-        Busca por username, si se encuentra al usuario, entonces retorna la posicion guardada
-        Si no, retorna -1
-    */
-    public long search(String username) {
-        Entry temp = cabeza;
-        
-        while(temp != null) {
-            if (temp.getUsername().equals(username)) {
-                return temp.getPos();
-            }
-            
             temp = temp.sigte;
         }
-        
-        return -1L;
     }
-    
-    public int size() {
-        return size;
-    }
-    public boolean isEmpty() {
-        return size == 0;
+
+    public long search(String username) {
+        Entry temp = head;
+        while (temp != null) {
+            if (temp.username.equals(username)) {
+                return temp.pos;
+            }
+            temp = temp.sigte;
+        }
+        return -1;
     }
 }

@@ -4,102 +4,156 @@
  */
 package lab7_hash;
 
+import java.io.*;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 /**
  *
  * @author andre
  */
-import java.io.*;
-import java.util.Date;
 
 public class PSNUsers {
 
     private RandomAccessFile usersFile;
+    private RandomAccessFile trophiesFile;
     private HashTable users;
-    private static final String USERS_FILE = "users.psn";
-    private static final String TROPHIES_FILE = "trophies.psn";
 
-    public PSNUsers() throws IOException {
+    public PSNUsers() throws Exception {
+        usersFile = new RandomAccessFile("users.psn", "rw");
+        trophiesFile = new RandomAccessFile("trophies.psn", "rw");
         users = new HashTable();
-
-        File userFile = new File(USERS_FILE);
-        File trophyFile = new File(TROPHIES_FILE);
-
-        if (!userFile.exists()) {
-            userFile.createNewFile();
-        }
-        if (!trophyFile.exists()) {
-            trophyFile.createNewFile();
-        }
-
-        usersFile = new RandomAccessFile(USERS_FILE, "rw");
         reloadHashTable();
     }
-    
-    private void reloadHashTable() throws IOException {
-        if (usersFile.length() == 0) {
-            return;         }
 
-        usersFile.seek(0);
-
+    private void reloadHashTable() {
         try {
+            usersFile.seek(0);
             while (usersFile.getFilePointer() < usersFile.length()) {
-                long position = usersFile.getFilePointer();
+                long pos = usersFile.getFilePointer();
                 String username = usersFile.readUTF();
-                int points = usersFile.readInt();
-                int trophyCount = usersFile.readInt();
-                boolean active = usersFile.readBoolean();
-
-                if (active) {
-                    users.add(username, position);
+                usersFile.readInt();
+                usersFile.readInt();
+                boolean activo = usersFile.readBoolean();
+                if (activo) {
+                    users.add(username, pos);
                 }
             }
-        } catch (EOFException e) {
+        } catch (Exception e) {
         }
     }
-    
-    /*
-        Formato:
-        username
-        anumuldor de puntos por trofeos
-        contador de trofeos
 
-    */
-    public void addUser(String username) throws IOException {
-        long pos = users.search(username);
-        
-        if (pos != 0) {
+    public void addUser(String username) throws Exception {
+        if (users.search(username) != -1) {
             return;
         }
-        
         usersFile.seek(usersFile.length());
-        long posescribir = usersFile.getFilePointer();
-        
+        long pos = usersFile.getFilePointer();
         usersFile.writeUTF(username);
         usersFile.writeInt(0);
         usersFile.writeInt(0);
         usersFile.writeBoolean(true);
-        
-        users.add(username, posescribir);
+        users.add(username, pos);
     }
-    
-    public void deactivateUser(String username) throws IOException {
+
+    public void deactivateUser(String username) throws Exception {
         long pos = users.search(username);
-        
         if (pos == -1) {
             return;
         }
-        
-        //Leer las cosas para poder marcar el usuario como no activo
         usersFile.seek(pos);
-        
         usersFile.readUTF();
         usersFile.readInt();
         usersFile.readInt();
-        
-        long posactivo = usersFile.getFilePointer();
-        
         usersFile.writeBoolean(false);
-        
         users.remove(username);
+    }
+
+    public void addTrophieTo(String username, String game, String trophyName, Trophy type, byte[] img) throws Exception {
+        long pos = -1;
+        usersFile.seek(0);
+        while (usersFile.getFilePointer() < usersFile.length()) {
+            long currentPos = usersFile.getFilePointer();
+            String u = usersFile.readUTF();
+            if (u.equals(username)) {
+                pos = currentPos;
+                break;
+            }
+            usersFile.readInt();
+            usersFile.readInt();
+            usersFile.readBoolean();
+        }
+        if (pos == -1) {
+            return;
+        }
+
+        trophiesFile.seek(trophiesFile.length());
+        trophiesFile.writeUTF(username);
+        trophiesFile.writeUTF(type.name());
+        trophiesFile.writeUTF(game);
+        trophiesFile.writeUTF(trophyName);
+        String fecha = new SimpleDateFormat("dd/MM/yyyy HH:mm").format(new Date());
+        trophiesFile.writeUTF(fecha);
+        trophiesFile.writeInt(img.length);
+        trophiesFile.write(img);
+
+        usersFile.seek(pos);
+        usersFile.readUTF();
+        long pointsPos = usersFile.getFilePointer();
+        int currentPoints = usersFile.readInt();
+        int currentTrophies = usersFile.readInt();
+        boolean active = usersFile.readBoolean();
+
+        usersFile.seek(pointsPos);
+        usersFile.writeInt(currentPoints + type.points);
+        usersFile.writeInt(currentTrophies + 1);
+    }
+
+    public String playerInfo(String username) throws Exception {
+        long pos = -1;
+        usersFile.seek(0);
+        while (usersFile.getFilePointer() < usersFile.length()) {
+            long currentPos = usersFile.getFilePointer();
+            String u = usersFile.readUTF();
+            if (u.equals(username)) {
+                pos = currentPos;
+                break;
+            }
+            usersFile.readInt();
+            usersFile.readInt();
+            usersFile.readBoolean();
+        }
+        if (pos == -1) {
+            return "No existe";
+        }
+
+        usersFile.seek(pos);
+        String usuario = usersFile.readUTF();
+        int points = usersFile.readInt();
+        int trophiesCount = usersFile.readInt();
+        boolean active = usersFile.readBoolean();
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("Usuario: ").append(usuario).append("\n");
+        sb.append("Puntos: ").append(points).append("\n");
+        sb.append("Trofeos: ").append(trophiesCount).append("\n");
+        sb.append("Activo: ").append(active).append("\n\n");
+
+        trophiesFile.seek(0);
+        sb.append("TROFEOS:\n");
+        while (trophiesFile.getFilePointer() < trophiesFile.length()) {
+            String u = trophiesFile.readUTF();
+            String tipo = trophiesFile.readUTF();
+            String game = trophiesFile.readUTF();
+            String desc = trophiesFile.readUTF();
+            String fecha = trophiesFile.readUTF();
+            int imglen = trophiesFile.readInt();
+            trophiesFile.skipBytes(imglen);
+            if (u.equals(username)) {
+                sb.append(fecha).append(" - ").append(tipo)
+                        .append(" - ").append(game)
+                        .append(" - ").append(desc).append("\n");
+            }
+        }
+        return sb.toString();
     }
 }
