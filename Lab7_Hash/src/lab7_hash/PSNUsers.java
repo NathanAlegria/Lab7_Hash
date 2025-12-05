@@ -218,4 +218,20 @@ public class PSNUsers {
         
         return false;
     }
+    
+    public int precheckUser(String username) throws IOException {
+        long pos = users.search(username);
+        
+        if (pos == -1) {
+            return -1;
+        }
+        
+        usersFile.readUTF();
+        usersFile.readInt();
+        usersFile.readInt();
+        
+        boolean active = usersFile.readBoolean();
+        
+        return active ? 1 : 0;
+    }
 }

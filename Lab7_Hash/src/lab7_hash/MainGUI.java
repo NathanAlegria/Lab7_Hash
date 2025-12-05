@@ -99,9 +99,23 @@ public class MainGUI extends JFrame {
         addTrophy.addActionListener(e -> {
             try {
                 String user = JOptionPane.showInputDialog("Usuario:");
+                
+                if (user == null || user.trim().isEmpty()) {
+                    return;
+                }
+                
+                int estado = system.precheckUser(user);
+                if (estado == -1) {
+                    JOptionPane.showMessageDialog(this, "El usuario no existe");
+                    return;
+                }
+                if (estado == 0) {
+                    JOptionPane.showMessageDialog(this, "La cuenta esta inactiva. no se pueden añadir trofeos");
+                }
+                
                 String game = JOptionPane.showInputDialog("Juego:");
                 String desc = JOptionPane.showInputDialog("Descripción del trofeo:");
-                if (user == null || game == null || desc == null) {
+                if (game == null || desc == null) {
                     return;
                 }
 
