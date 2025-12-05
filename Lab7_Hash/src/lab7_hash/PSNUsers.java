@@ -26,7 +26,7 @@ public class PSNUsers {
         reloadHashTable();
     }
 
-    private void reloadHashTable() {
+    private void reloadHashTable() { 
         try {
             usersFile.seek(0);
             while (usersFile.getFilePointer() < usersFile.length()) {
