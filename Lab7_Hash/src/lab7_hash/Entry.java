@@ -18,4 +18,18 @@ public class Entry {
         this.pos = pos;
         this.sigte = null;
     } 
+
+    public String getUsername() {
+        return username;
+    }
+
+    public long getPos() {
+        return pos;
+    }
+
+    public Entry getSigte() {
+        return sigte;
+    }
+    
+    
 }
